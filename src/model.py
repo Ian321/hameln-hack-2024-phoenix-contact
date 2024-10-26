@@ -3,6 +3,8 @@ import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+import numpy as np
+
 
 @dataclass
 class Location:
@@ -29,6 +31,22 @@ class FixedPowerPrice(PowerPrice):
         return self.price
 
 
+class DynamicPowerPrice(PowerPrice):
+    """Dynamic price over a given time."""
+
+    def __init__(self, times: list[datetime.datetime], prices: list[float]):
+        super().__init__()
+        self.times = [x.timestamp() for x in times]
+        self.prices = prices
+
+    def get(self, time: datetime.datetime):
+        index = np.searchsorted(
+            self.times, time.timestamp(), side="left", sorter=None).item()
+
+        index = min(index, len(self.prices) - 1)
+        return self.prices[index]
+
+
 class Liter:
     """Unit: Liter"""
 
@@ -40,6 +58,9 @@ class Liter:
 
     def __sub__(self, other: "Liter"):
         return Liter(self.l - other.l)
+
+    def __gt__(self, other: "Liter"):
+        return self.l > other.l
 
 
 class LiterPerSecond:
@@ -85,6 +106,10 @@ class Pump(ABC):
     @abstractmethod
     def want(self, power_percentage: float):
         """Change the "wanted" state of the pump."""
+
+    @abstractmethod
+    def current(self) -> float:
+        """Get the current %"""
 
     @abstractmethod
     def step(self, duration: datetime.timedelta) -> tuple[KW, Liter]:
@@ -137,3 +162,10 @@ class Tank:
 
             self.cost += kw.kw * self.energy_price.get(self.time)
             self.tank += l
+
+    def safe_pump(self, duration: datetime.timedelta):
+        """Check if >it's safe to pump for that duration."""
+        _, l = self.pump.step(duration)
+        if (self.tank + l) > self.tank_max:
+            return False
+        return True

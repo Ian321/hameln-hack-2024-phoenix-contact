@@ -17,6 +17,9 @@ class SimplePump(Pump):
     def want(self, power_percentage):
         self.percentage = power_percentage
 
+    def current(self):
+        return self.percentage
+
     def step(self, duration):
         return (
             KW(self.percentage * self.power.kw * duration.seconds / 3600),
