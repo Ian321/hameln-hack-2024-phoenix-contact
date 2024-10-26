@@ -30,7 +30,7 @@ class TestBaseCase(unittest.TestCase):
             pump, price, decider
         )
         for volume in drain["Tank1"]:
-            tank.step(datetime.timedelta(minutes=15),
+            tank.foreward(datetime.timedelta(minutes=15),
                       model.LiterPerSecond(volume))
 
         self.assertEqual(round(tank.cost, 2), 101.56)
@@ -47,7 +47,7 @@ class TestBaseCase(unittest.TestCase):
             pump, price, decider
         )
         for volume in drain["Tank2"]:
-            tank.step(datetime.timedelta(minutes=15),
+            tank.foreward(datetime.timedelta(minutes=15),
                       model.LiterPerSecond(volume))
 
         self.assertEqual(round(tank.cost, 2), 70.13)

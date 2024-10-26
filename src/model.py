@@ -144,8 +144,8 @@ class Tank:
         self.generator = generator
         self.cost = 0.0
 
-    def step(self, duration: datetime.timedelta, drain: LiterPerSecond):
-        """Step through time."""
+    def foreward(self, duration: datetime.timedelta, drain: LiterPerSecond):
+        """Step foreward through time."""
         second = datetime.timedelta(seconds=1)
         for _ in range(duration.seconds):
             self.time += second
@@ -162,6 +162,28 @@ class Tank:
 
             self.cost += kw.kw * self.energy_price.get(self.time)
             self.tank += l
+
+    def backward(self, duration: datetime.timedelta, drain: LiterPerSecond, wants: list[float]):
+        """Step backward through time."""
+        second = datetime.timedelta(seconds=1)
+        for i in range(duration.seconds):
+            self.pump.want(wants[i])
+            kw, l = self.pump.step(second)
+
+            if self.pv:
+                kw += self.pv.get(self.time, second)
+
+            if self.generator:
+                kw += self.generator.get(drain.lps)
+
+            self.tank -= l
+            self.cost -= kw.kw * self.energy_price.get(self.time)
+
+            self.tank += Liter(drain.lps)
+            self.time -= second
+
+            # Run checks
+            self.decider.decide(self)
 
     def safe_pump(self, duration: datetime.timedelta):
         """Check if >it's safe to pump for that duration."""
