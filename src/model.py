@@ -55,6 +55,12 @@ class KW:
     def __init__(self, kw: float):
         self.kw = kw
 
+    def __add__(self, other: "KW"):
+        return KW(self.kw + other.kw)
+
+    def __sub__(self, other: "KW"):
+        return KW(self.kw - other.kw)
+
 
 class PV(ABC):
     """Abstact class for a PV."""
@@ -122,5 +128,12 @@ class Tank:
 
             self.pump.want(self.decider.decide(self))
             kw, l = self.pump.step(second)
+
+            if self.pv:
+                kw -= self.pv.get(self.time, second)
+
+            if self.generator:
+                kw -= self.generator.get(drain.lps)
+
             self.cost += kw.kw * self.energy_price.get(self.time)
             self.tank += l
