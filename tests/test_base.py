@@ -4,7 +4,7 @@ import unittest
 
 import pandas as pd
 
-import src.model as model
+from src import model
 from src.deciders.simple import SimpleDecider
 from src.pumps.simple import SimplePump
 
