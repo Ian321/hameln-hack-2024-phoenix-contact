@@ -11,6 +11,8 @@ class CheapDecider(model.Decider):
         super().__init__()
 
     def decide(self, tank):
+        if tank.tank < tank.tank_min:
+            raise ValueError("Tank got too low.")
         if tank.energy_price.get(tank.time) > self.max:
             return 0.0
         if tank.safe_pump(datetime.timedelta(minutes=15)):
