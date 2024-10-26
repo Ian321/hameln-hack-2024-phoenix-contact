@@ -25,7 +25,8 @@ class TestBaseCase(unittest.TestCase):
             16.5), datetime.timedelta(minutes=15))
         tank = model.Tank(
             start_time,
-            model.Liter(540_000), model.Liter(540_000*0.1), model.Liter(540_000*0.5),
+            model.Liter(540_000), model.Liter(
+                540_000*0.1), model.Liter(540_000*0.5),
             pump, price, decider
         )
         for volume in drain["Tank1"]:
@@ -41,7 +42,8 @@ class TestBaseCase(unittest.TestCase):
             11.2), datetime.timedelta(minutes=15))
         tank = model.Tank(
             start_time,
-            model.Liter(154_000), model.Liter(154_000*0.1), model.Liter(154_000*0.5),
+            model.Liter(154_000), model.Liter(
+                154_000*0.1), model.Liter(154_000*0.5),
             pump, price, decider
         )
         for volume in drain["Tank2"]:
