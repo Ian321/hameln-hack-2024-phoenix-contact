@@ -2,3 +2,4 @@ autopep8
 coverage
 pandas
 pylint
+tqdm
