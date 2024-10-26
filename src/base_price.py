@@ -1,6 +1,7 @@
 """Calculate the the price from the data."""
 import pandas as pd
 
+
 def main(col: str, kwh: float, lps: float):
     """Returns the price in EUR"""
     drain = pd.read_csv("./data/drain.csv")

@@ -1,5 +1,8 @@
 # HamelnHack 2024 - Phoenix Contact
 
+Test: `python3 -m coverage run -m unittest`
+HTML: `python3 -m coverage html`
+
 ## Behälter
 
 |                                   | Hochbehälter 1 | Hochbehälter 2 |

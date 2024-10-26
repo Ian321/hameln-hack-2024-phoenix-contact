@@ -1,7 +1,7 @@
 """Model of everything."""
 import datetime
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 
 @dataclass
@@ -35,40 +35,90 @@ class Liter:
     def __init__(self, l: float):
         self.l = l
 
+    def __add__(self, other: "Liter"):
+        return Liter(self.l + other.l)
 
-class KWH:
-    """Unit: KWH"""
+    def __sub__(self, other: "Liter"):
+        return Liter(self.l - other.l)
 
-    def __init__(self, kwh: float):
-        self.kwh = kwh
+
+class LiterPerSecond:
+    """Unit: L/s"""
+
+    def __init__(self, lps: float):
+        self.lps = lps
+
+
+class KW:
+    """Unit: KW"""
+
+    def __init__(self, kw: float):
+        self.kw = kw
 
 
 class PV(ABC):
     """Abstact class for a PV."""
     @abstractmethod
-    def get(self, time: datetime.datetime, duration: datetime.timedelta) -> KWH:
+    def get(self, time: datetime.datetime, duration: datetime.timedelta) -> KW:
         """Get the produced power at a given time and duration."""
 
 
 class Generator:
     """Turbine that generates power as it flows out of the tank."""
 
-    def __init__(self, power_per_liter: KWH):
+    def __init__(self, power_per_liter: KW):
         self.ppl = power_per_liter
 
-    def get(self, liters: Liter) -> KWH:
+    def get(self, liters: Liter) -> KW:
         """Get the power generated."""
-        return KWH(self.ppl * liters.l)
+        return KW(self.ppl * liters.l)
 
 
-class Wasserwerk:
-    """Ein Standort."""
+class Pump(ABC):
+    """Abstract pump."""
+    @abstractmethod
+    def want(self, power_percentage: float):
+        """Change the "wanted" state of the pump."""
+
+    @abstractmethod
+    def step(self, duration: datetime.timedelta) -> tuple[KW, Liter]:
+        """Get the power used and volume pumped during a given duration."""
+
+
+class Decider(ABC):
+    """Abstract decider."""
+    @abstractmethod
+    def decide(self, tank: "Tank") -> float:
+        """Decide what to do with the pump."""
+
+
+class Tank:
+    """A single container."""
 
     def __init__(
             self,
-            tank_size: Liter, tank_min: Liter, tank_start: Liter,
-            pump_power: KWH, pump_volume: Liter, pump_min: datetime.timedelta,
-            e_price: PowerPrice,
+            start_time: datetime.datetime,
+            tank_max: Liter, tank_min: Liter, tank_start: Liter,
+            pump: Pump, energy_price: PowerPrice, decider: Decider,
             pv: PV = None, generator: Generator = None
     ):
-        pass
+        self.time = start_time
+        self.tank_max = tank_max
+        self.tank_min = tank_min
+        self.tank = tank_start
+        self.pump = pump
+        self.energy_price = energy_price
+        self.decider = decider
+        self.pv = pv
+        self.generator = generator
+        self.cost = 0.0
+
+    def step(self, duration: datetime.timedelta, drain: Liter):
+        """Step through time."""
+        self.time += duration
+        self.tank -= Liter(drain.l * 15 * 60)
+
+        self.pump.want(self.decider.decide(self))
+        kw, l = self.pump.step(duration)
+        self.cost += kw.kw * self.energy_price.get(self.time)
+        self.tank += l
