@@ -58,7 +58,8 @@ class Evolution:
         return [self.tanks[i].decider for i in range(3)]
 
 
-if __name__ == "__main__":
+def main():
+    """Run it"""
     e = Evolution()
     best = e.run()
 
@@ -71,3 +72,7 @@ if __name__ == "__main__":
         assert len(brains) == 10
         e = Evolution(brains)
         best = e.run()
+
+
+if __name__ == "__main__":
+    main()
