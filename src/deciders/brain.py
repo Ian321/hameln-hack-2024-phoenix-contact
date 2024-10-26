@@ -5,10 +5,10 @@ import math
 from src import model
 
 
-def leaky_relu(x: float) -> float:
+def leaky_relu(x: float, a = 0.0) -> float:
     """LeakyReLU"""
     if x < 0.0:
-        return x * 0.01
+        return x * a
     return x
 
 
