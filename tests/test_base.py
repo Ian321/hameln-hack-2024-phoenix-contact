@@ -31,7 +31,7 @@ class TestBaseCase(unittest.TestCase):
         )
         for volume in drain["Tank1"]:
             tank.foreward(datetime.timedelta(minutes=15),
-                      model.LiterPerSecond(volume))
+                          model.LiterPerSecond(volume))
 
         self.assertEqual(round(tank.cost, 2), 101.56)
         self.assertEqual(round(tank.tank.l, 2) - 9.0, tank.tank_max.l / 2)
@@ -48,7 +48,7 @@ class TestBaseCase(unittest.TestCase):
         )
         for volume in drain["Tank2"]:
             tank.foreward(datetime.timedelta(minutes=15),
-                      model.LiterPerSecond(volume))
+                          model.LiterPerSecond(volume))
 
         self.assertEqual(round(tank.cost, 2), 70.13)
         self.assertEqual(round(tank.tank.l, 2) - 10, tank.tank_max.l / 2)

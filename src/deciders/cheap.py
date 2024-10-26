@@ -6,7 +6,7 @@ from src import model
 class CheapDecider(model.Decider):
     """Only buy if under X."""
 
-    def __init__(self, max_price: float, ignore_overfill = False):
+    def __init__(self, max_price: float, ignore_overfill=False):
         self.max = max_price
         self.ignore_overfill = ignore_overfill
         super().__init__()

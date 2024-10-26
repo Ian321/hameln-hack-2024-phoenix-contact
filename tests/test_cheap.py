@@ -28,7 +28,8 @@ class TestCheapCase(unittest.TestCase):
         for over in (3,):
             pump = SimplePump(model.KW(20), model.LiterPerSecond(
                 16.5), datetime.timedelta(minutes=15))
-            decider = CheapDecider((max_price.item() / 100) + (over / 100), True)
+            decider = CheapDecider(
+                (max_price.item() / 100) + (over / 100), True)
             tank = model.Tank(
                 start_time,
                 model.Liter(540_000), model.Liter(
@@ -39,7 +40,7 @@ class TestCheapCase(unittest.TestCase):
             try:
                 for volume in drain["Tank1"]:
                     tank.foreward(datetime.timedelta(minutes=15),
-                              model.LiterPerSecond(volume))
+                                  model.LiterPerSecond(volume))
                 found = True
                 break
             except ValueError:
