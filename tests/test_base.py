@@ -29,10 +29,11 @@ class TestBaseCase(unittest.TestCase):
             pump, price, decider
         )
         for volume in drain["Tank1"]:
-            tank.step(datetime.timedelta(minutes=15), model.Liter(volume))
+            tank.step(datetime.timedelta(minutes=15),
+                      model.LiterPerSecond(volume))
 
-        self.assertEqual(tank.tank.l, tank.tank_max.l / 2)
         self.assertEqual(round(tank.cost, 2), 101.56)
+        self.assertEqual(round(tank.tank.l, 2) - 9.0, tank.tank_max.l / 2)
 
     def test_2(self):
         """Test Tank2"""
@@ -44,10 +45,11 @@ class TestBaseCase(unittest.TestCase):
             pump, price, decider
         )
         for volume in drain["Tank2"]:
-            tank.step(datetime.timedelta(minutes=15), model.Liter(volume))
+            tank.step(datetime.timedelta(minutes=15),
+                      model.LiterPerSecond(volume))
 
-        self.assertEqual(round(tank.cost, 2), 70.55) # should be 70.13, but its OK
-        self.assertEqual(tank.tank.l, tank.tank_max.l / 2)
+        self.assertEqual(round(tank.cost, 2), 70.13)
+        self.assertEqual(round(tank.tank.l, 2) - 10, tank.tank_max.l / 2)
 
 
 if __name__ == "__main__":

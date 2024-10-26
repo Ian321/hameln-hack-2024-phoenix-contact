@@ -113,12 +113,14 @@ class Tank:
         self.generator = generator
         self.cost = 0.0
 
-    def step(self, duration: datetime.timedelta, drain: Liter):
+    def step(self, duration: datetime.timedelta, drain: LiterPerSecond):
         """Step through time."""
-        self.time += duration
-        self.tank -= Liter(drain.l * 15 * 60)
+        second = datetime.timedelta(seconds=1)
+        for _ in range(duration.seconds):
+            self.time += second
+            self.tank -= Liter(drain.lps)
 
-        self.pump.want(self.decider.decide(self))
-        kw, l = self.pump.step(duration)
-        self.cost += kw.kw * self.energy_price.get(self.time)
-        self.tank += l
+            self.pump.want(self.decider.decide(self))
+            kw, l = self.pump.step(second)
+            self.cost += kw.kw * self.energy_price.get(self.time)
+            self.tank += l
