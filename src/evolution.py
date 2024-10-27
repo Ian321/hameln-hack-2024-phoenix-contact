@@ -1,5 +1,7 @@
 """It's evolution baby!!!"""
 import datetime
+import multiprocessing
+import json
 
 import pandas as pd
 from tqdm import tqdm
@@ -19,6 +21,24 @@ prices["datetime"] = pd.to_datetime(prices["datetime"].str.split(" ").str[0])
 price = model.DynamicPowerPrice(
     prices["datetime"].to_list(), (prices["flexibel [ct/kWh]"] / 100).to_list())
 
+TANKS = 20
+
+
+def run_tank(args: tuple[int, model.Tank]):
+    """Simulate in another thread."""
+    index, tank = args
+    count = len(drain)
+    for i, volume in enumerate(tqdm(drain["Tank1"], disable=index)):
+        if tank.cost > 1_000:
+            break
+
+        tank.foreward(datetime.timedelta(minutes=15),
+                      model.LiterPerSecond(volume))
+        if (tank.tank < tank.tank_min or
+                tank.tank > tank.tank_max):
+            tank.cost += 1_001 * (count - i)
+    return tank
+
 
 class Evolution:
     """Use some genetic algorithm to find the best decider."""
@@ -26,7 +46,7 @@ class Evolution:
     def __init__(self, brains: list[BrainDecider] = None):
         if not brains:
             brains = [
-                BrainDecider(5, 5) for _ in range(10)
+                BrainDecider(5, 5) for _ in range(TANKS)
             ]
 
         self.tanks = [model.Tank(
@@ -38,17 +58,10 @@ class Evolution:
 
     def run(self) -> list[BrainDecider]:
         """Run one epoch."""
-        number = len(drain)
-        for index, volume in enumerate(tqdm(drain["Tank1"])):
-            for tank in self.tanks:
-                if tank.cost > 1_000:
-                    continue
-
-                tank.foreward(datetime.timedelta(minutes=15),
-                              model.LiterPerSecond(volume))
-                if (tank.tank < tank.tank_min or
-                        tank.tank > tank.tank_max):
-                    tank.cost += 1_001 * (number - index)
+        with multiprocessing.Pool() as pool:
+            self.tanks = pool.map(run_tank, enumerate(self.tanks))
+            pool.close()
+            pool.join()
 
         # for tank in self.tanks:
         #     tank.cost += abs(tank.tank.l - (tank.tank_max.l / 2)) * 2
@@ -63,15 +76,27 @@ def main():
     e = Evolution()
     best = e.run()
 
-    for _ in range(10):
+    for i in range(16):
         brains = []
         brains.extend([x.mutate(0.0) for x in best])
+        brains.extend([x.mutate(0.125) for x in best])
         brains.extend([x.mutate(0.25) for x in best])
         brains.extend([x.mutate(0.5) for x in best])
-        brains.append(BrainDecider(5, 5))
-        assert len(brains) == 10
+        brains.extend([x.mutate(0.9**(i*2)) for x in best*2])
+        while len(brains) < TANKS:
+            brains.append(BrainDecider(5, 5))
+        assert len(brains) == TANKS
         e = Evolution(brains)
         best = e.run()
+
+    print(json.dumps({
+        "w1": best[0].w1,
+        "b1": best[0].b1,
+        "w2": best[0].w2,
+        "b2": best[0].b2,
+        "w3": best[0].w3,
+        "b3": best[0].b3
+    }))
 
 
 if __name__ == "__main__":
