@@ -9,18 +9,19 @@ from src.deciders.brain import BrainDecider
 from src.pumps.simple import SimplePump
 
 
-start_time = datetime.datetime.fromisoformat("2024-04-01T00:00Z")
-prices = pd.read_csv("./data/price.csv")
-drain = pd.read_csv("./data/drain.csv")
+start_time = datetime.datetime.fromisoformat("2024-07-01T00:00Z")
+end_time = datetime.datetime.fromisoformat("2024-07-08T00:00Z")
 
-prices["datetime"] = prices["Tag"] + "T" + prices["Uhrzeit"]
-prices["datetime"] = pd.to_datetime(prices["datetime"].str.split(" ").str[0])
+data = pd.read_csv("./data/extended.csv")
+data["datetime"] = pd.to_datetime(data["datetime"], utc=True)
+data = data[data["datetime"] >= start_time]
+data = data[data["datetime"] < end_time]
 price = model.DynamicPowerPrice(
-    prices["datetime"].to_list(), (prices["flexibel [ct/kWh]"] / 100).to_list())
+    data["datetime"].to_list(), (data["electricity_price"] / 100).to_list())
 
 pump = SimplePump(model.KW(20), model.LiterPerSecond(16.5),
                   datetime.timedelta(minutes=15))
-decider = BrainDecider.from_file("./data/model1.json")
+decider = BrainDecider.from_file("./data/modele.json")
 tank = model.Tank(
     start_time,
     model.Liter(540_000), model.Liter(
@@ -33,7 +34,7 @@ volumes = [tank.tank.l]
 powers = [tank.pump.current() * pump.power.kw]
 costs = [tank.cost]
 
-for volume in drain["Tank1"]:
+for volume in data["drain"]:
     tank.foreward(datetime.timedelta(minutes=15),
                   model.LiterPerSecond(volume))
     times.append(tank.time)

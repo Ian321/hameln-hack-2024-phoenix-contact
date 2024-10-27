@@ -11,35 +11,37 @@ from src import model
 from src.deciders.brain import BrainDecider
 from src.pumps.simple import SimplePump
 
-start_time = datetime.datetime.fromisoformat("2024-04-01T00:00Z")
+start_time = datetime.datetime.fromisoformat("2024-07-01T00:00Z")
+end_time = datetime.datetime.fromisoformat("2024-07-08T00:00Z")
 pump = SimplePump(model.KW(20), model.LiterPerSecond(
     16.5), datetime.timedelta(minutes=15))
-drain = pd.read_csv("./data/drain.csv")
 
-prices = pd.read_csv("./data/price.csv")
-prices["datetime"] = prices["Tag"] + "T" + prices["Uhrzeit"]
-prices["datetime"] = pd.to_datetime(prices["datetime"].str.split(" ").str[0])
+data = pd.read_csv("./data/extended.csv")
+data["datetime"] = pd.to_datetime(data["datetime"], utc=True)
+data = data[data["datetime"] >= start_time]
+data = data[data["datetime"] < end_time]
 price = model.DynamicPowerPrice(
-    prices["datetime"].to_list(), (prices["flexibel [ct/kWh]"] / 100).to_list())
+    data["datetime"].to_list(), (data["electricity_price"] / 100).to_list())
 
-TANKS = 20
+TANKS = 32
 
 
 def run_tank(args: tuple[int, model.Tank]):
     """Simulate in another thread."""
     index, tank = args
-    for volume in tqdm(drain["Tank1"], disable=index):
-        if tank.cost > 4_000:
+    length = len(data)
+    for i, volume in enumerate(tqdm(data["drain"], disable=index)):
+        if tank.cost > 1_000_000:
             break
 
         tank.foreward(datetime.timedelta(minutes=15),
                       model.LiterPerSecond(volume))
         if (tank.tank < tank.tank_min or
                 tank.tank > tank.tank_max):
-            tank.cost += 4_004
+            tank.cost += 1_000_001 * (length - i)
 
     off_by = abs(tank.tank.l - (tank.tank_max.l / 2))
-    tank.cost += (off_by / tank.tank_max.l) * 2000
+    tank.cost += (off_by / tank.tank_max.l) * 100_000
     return tank
 
 
@@ -65,7 +67,7 @@ class Evolution:
         self.tanks.sort(key=lambda tank: tank.cost)
         print(
             f"cost: {self.tanks[0].cost:.2f}, volume: {self.tanks[0].tank.l:.2f}")
-        return [self.tanks[i].decider for i in range(3)]
+        return [self.tanks[i].decider for i in range(5)]
 
 
 def main():
@@ -73,8 +75,8 @@ def main():
     with multiprocessing.Pool() as pool:
         e = Evolution()
         best = e.run(pool)
-
-        for i in range(16):
+        # best: 386.28
+        for i in range(32):
             brains = []
             brains.extend([x.mutate(0.0) for x in best])
             brains.extend([x.mutate(0.125) for x in best])
