@@ -28,19 +28,18 @@ TANKS = 20
 def run_tank(args: tuple[int, model.Tank]):
     """Simulate in another thread."""
     index, tank = args
-    count = len(drain)
-    for i, volume in enumerate(tqdm(drain["Tank1"], disable=index)):
-        if tank.cost > 2_000:
+    for volume in tqdm(drain["Tank1"], disable=index):
+        if tank.cost > 4_000:
             break
 
         tank.foreward(datetime.timedelta(minutes=15),
                       model.LiterPerSecond(volume))
         if (tank.tank < tank.tank_min or
                 tank.tank > tank.tank_max):
-            tank.cost += 2_002 * (count - i)
+            tank.cost += 4_004
 
     off_by = abs(tank.tank.l - (tank.tank_max.l / 2))
-    tank.cost += (1 - (1 / max(off_by, 1))) * 1000
+    tank.cost += (off_by / tank.tank_max.l) * 2000
     return tank
 
 

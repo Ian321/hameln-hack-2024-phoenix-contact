@@ -64,7 +64,11 @@ class BrainDecider(model.Decider):
         return other
 
     def decide(self, tank):
+        time = (tank.time.second +
+                tank.time.minute * 60 +
+                tank.time.hour * 60 * 60)
         l0 = [
+            scale(time, 0, 24 * 60 * 60),
             scale(tank.tank.l, 0, tank.tank_max.l),
             tank.energy_price.get(tank.time)
         ]
