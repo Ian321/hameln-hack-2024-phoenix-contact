@@ -49,7 +49,7 @@ class Evolution:
     def __init__(self, brains: list[BrainDecider] = None):
         if not brains:
             brains = [
-                BrainDecider(5, 5) for _ in range(TANKS)
+                BrainDecider() for _ in range(TANKS)
             ]
 
         self.tanks = [model.Tank(
@@ -82,7 +82,7 @@ def main():
             brains.extend([x.mutate(0.5) for x in best])
             brains.extend([x.mutate(0.9**(i*2)) for x in best*2])
             while len(brains) < TANKS:
-                brains.append(BrainDecider(5, 5))
+                brains.append(BrainDecider())
             assert len(brains) == TANKS
             e = Evolution(brains)
             best = e.run(pool)
@@ -90,12 +90,8 @@ def main():
         pool.close()
         pool.join()
     print(json.dumps({
-        "w1": best[0].w1,
-        "b1": best[0].b1,
-        "w2": best[0].w2,
-        "b2": best[0].b2,
-        "w3": best[0].w3,
-        "b3": best[0].b3
+        "weights": best[0].weights,
+        "biases": best[0].biases
     }))
 
 

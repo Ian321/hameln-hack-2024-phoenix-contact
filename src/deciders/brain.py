@@ -1,14 +1,15 @@
 """Brain decider."""
-import random
+import json
 import math
+import random
 
 from src import model
 
 
-def leaky_relu(x: float, a=0.0) -> float:
-    """LeakyReLU"""
-    if x < 0.0:
-        return x * a
+def relu(x: float) -> float:
+    """ReLU"""
+    if x <= 0.0:
+        return 0.0
     return x
 
 
@@ -36,55 +37,71 @@ def clamp(x: float):
 class BrainDecider(model.Decider):
     """Use a NN to make the decision."""
 
-    def __init__(self, l1: int, l2: int):
-        self.l1w = l1
-        self.l2w = l2
-        self.w1 = [random.uniform(-1.0, 1.0) for _ in range(l1)]
-        self.b1 = [random.uniform(-1.0, 1.0) for _ in range(l1)]
-        self.w2 = [random.uniform(-1.0, 1.0) for _ in range(l2)]
-        self.b2 = [random.uniform(-1.0, 1.0) for _ in range(l2)]
-        self.w3 = [random.uniform(-1.0, 1.0) for _ in range(2)]
-        self.b3 = [random.uniform(-1.0, 1.0) for _ in range(2)]
+    def __init__(self, sizes: list[int] = None):
+        if not sizes and sizes != []:
+            sizes = [5, 5]
+        self.sizes = sizes + [2]
+        self.weights: list[list[float]] = []
+        self.biases: list[list[float]] = []
+        for size in self.sizes:
+            self.weights.append([
+                random.uniform(-1.0, 1.0) for _ in range(size)
+            ])
+            self.biases.append([
+                random.uniform(-1.0, 1.0) for _ in range(size)
+            ])
 
     def mutate(self, m: float):
         """Some random mutation."""
-        other = BrainDecider(self.l1w, self.l2w)
-        other.w1 = [clamp(before + random.uniform(-m, m))
-                    for before in self.w1]
-        other.b1 = [clamp(before + random.uniform(-m, m))
-                    for before in self.b1]
-        other.w2 = [clamp(before + random.uniform(-m, m))
-                    for before in self.w2]
-        other.b2 = [clamp(before + random.uniform(-m, m))
-                    for before in self.b2]
-        other.w3 = [clamp(before + random.uniform(-m, m))
-                    for before in self.w3]
-        other.b3 = [clamp(before + random.uniform(-m, m))
-                    for before in self.b3]
+        other = BrainDecider([])
+        other.sizes = self.sizes
+        other.weights = []
+        other.biases = []
+
+        for weights in self.weights:
+            other.weights.append([
+                clamp(w + random.uniform(-m, m))
+                for w in weights
+            ])
+        for biases in self.biases:
+            other.biases.append([
+                clamp(b + random.uniform(-m, m))
+                for b in biases
+            ])
         return other
 
     def decide(self, tank):
-        time = (tank.time.second +
-                tank.time.minute * 60 +
-                tank.time.hour * 60 * 60)
-        l0 = [
-            scale(time, 0, 24 * 60 * 60),
+        current = [
             scale(tank.tank.l, 0, tank.tank_max.l),
             tank.energy_price.get(tank.time)
         ]
-        l1 = [
-            leaky_relu(sum(w0 * w1 for w0 in l0) + b1)
-            for w1, b1 in zip(self.w1, self.b1)
-        ]
-        l2 = [
-            leaky_relu(sum(w1 * w2 for w1 in l1) + b2)
-            for w2, b2 in zip(self.w2, self.b2)
-        ]
-        l3 = [
-            leaky_relu(sum(w2 * w3 for w2 in l2) + b3)
-            for w3, b3 in zip(self.w3, self.b3)
-        ]
-        l4 = softmax(l3)
-        if l4[0] > 0.5:
+        for layer in range(len(self.sizes)):
+            next_layer = []
+            for weight, bias in zip(self.weights[layer], self.biases[layer]):
+                summation = bias
+                for before in current:
+                    summation += weight * before
+                next_layer.append(relu(summation))
+            current = next_layer
+
+        last = softmax(current)
+        if last[0] > 0.5:
             return 1.0
         return 0.0
+
+    @staticmethod
+    def from_file(path: str) -> "BrainDecider":
+        """Load the brain from a file."""
+        x = BrainDecider([])
+        with open(path, "r", encoding="utf8") as fp:
+            data = json.load(fp)
+        x.weights = data["weights"]
+        x.biases = data["biases"]
+
+        ws = [len(w) for w in x.weights]
+        bs = [len(b) for b in x.biases]
+        for w, b in zip(ws, bs):
+            assert w == b
+
+        x.sizes = ws
+        return x
