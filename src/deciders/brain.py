@@ -5,7 +5,7 @@ import math
 from src import model
 
 
-def leaky_relu(x: float, a = 0.0) -> float:
+def leaky_relu(x: float, a=0.0) -> float:
     """LeakyReLU"""
     if x < 0.0:
         return x * a
