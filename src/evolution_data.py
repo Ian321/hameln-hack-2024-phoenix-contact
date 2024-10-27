@@ -20,7 +20,7 @@ price = model.DynamicPowerPrice(
 
 pump = SimplePump(model.KW(20), model.LiterPerSecond(16.5),
                   datetime.timedelta(minutes=15))
-decider = BrainDecider.from_file("./data/model.json")
+decider = BrainDecider.from_file("./data/model1.json")
 tank = model.Tank(
     start_time,
     model.Liter(540_000), model.Liter(
