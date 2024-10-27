@@ -1,7 +1,8 @@
 """It's evolution baby!!!"""
 import datetime
-import multiprocessing
 import json
+import multiprocessing
+import multiprocessing.pool
 
 import pandas as pd
 from tqdm import tqdm
@@ -29,14 +30,17 @@ def run_tank(args: tuple[int, model.Tank]):
     index, tank = args
     count = len(drain)
     for i, volume in enumerate(tqdm(drain["Tank1"], disable=index)):
-        if tank.cost > 1_000:
+        if tank.cost > 2_000:
             break
 
         tank.foreward(datetime.timedelta(minutes=15),
                       model.LiterPerSecond(volume))
         if (tank.tank < tank.tank_min or
                 tank.tank > tank.tank_max):
-            tank.cost += 1_001 * (count - i)
+            tank.cost += 2_002 * (count - i)
+
+    off_by = abs(tank.tank.l - (tank.tank_max.l / 2))
+    tank.cost += (1 - (1 / max(off_by, 1))) * 1000
     return tank
 
 
@@ -56,39 +60,36 @@ class Evolution:
             pump, price, decider
         ) for decider in brains]
 
-    def run(self) -> list[BrainDecider]:
+    def run(self, pool: multiprocessing.pool.Pool) -> list[BrainDecider]:
         """Run one epoch."""
-        with multiprocessing.Pool() as pool:
-            self.tanks = pool.map(run_tank, enumerate(self.tanks))
-            pool.close()
-            pool.join()
-
-        # for tank in self.tanks:
-        #     tank.cost += abs(tank.tank.l - (tank.tank_max.l / 2)) * 2
-
+        self.tanks = pool.map(run_tank, enumerate(self.tanks))
         self.tanks.sort(key=lambda tank: tank.cost)
-        print(self.tanks[0].cost)
+        print(
+            f"cost: {self.tanks[0].cost:.2f}, volume: {self.tanks[0].tank.l:.2f}")
         return [self.tanks[i].decider for i in range(3)]
 
 
 def main():
     """Run it"""
-    e = Evolution()
-    best = e.run()
+    with multiprocessing.Pool() as pool:
+        e = Evolution()
+        best = e.run(pool)
 
-    for i in range(16):
-        brains = []
-        brains.extend([x.mutate(0.0) for x in best])
-        brains.extend([x.mutate(0.125) for x in best])
-        brains.extend([x.mutate(0.25) for x in best])
-        brains.extend([x.mutate(0.5) for x in best])
-        brains.extend([x.mutate(0.9**(i*2)) for x in best*2])
-        while len(brains) < TANKS:
-            brains.append(BrainDecider(5, 5))
-        assert len(brains) == TANKS
-        e = Evolution(brains)
-        best = e.run()
+        for i in range(16):
+            brains = []
+            brains.extend([x.mutate(0.0) for x in best])
+            brains.extend([x.mutate(0.125) for x in best])
+            brains.extend([x.mutate(0.25) for x in best])
+            brains.extend([x.mutate(0.5) for x in best])
+            brains.extend([x.mutate(0.9**(i*2)) for x in best*2])
+            while len(brains) < TANKS:
+                brains.append(BrainDecider(5, 5))
+            assert len(brains) == TANKS
+            e = Evolution(brains)
+            best = e.run(pool)
 
+        pool.close()
+        pool.join()
     print(json.dumps({
         "w1": best[0].w1,
         "b1": best[0].b1,
