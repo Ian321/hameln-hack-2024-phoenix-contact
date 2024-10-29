@@ -22,7 +22,7 @@ def softmax(x: list[float]) -> list[float]:
 
 def scale(x, i_min, i_max):
     """Scale a number to between 0 and 1."""
-    return (x - i_min) / i_max
+    return (x - i_min) / (i_max - i_min)
 
 
 def clamp(x: float):
